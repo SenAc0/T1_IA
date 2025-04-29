@@ -1,14 +1,3 @@
-Ejemplo basico
-
-
-
-
-
-
-
-
-Ejemplo de Tarea 1
-
 5 5 0 0 1 3
 3 4 1 3 1
 3 3 3 0 2
@@ -28,9 +17,3 @@ Ejemplo de Tarea 1
 1 1 2
 1 1 1
 0
-Ejemplo que da resultado no hay solucion
-
-
-
-
-Correr varios laberintos a la vez, se termina cuando exista una unica linea con un 0

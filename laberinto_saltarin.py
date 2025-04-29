@@ -15,6 +15,45 @@ delay = 300  # milisegundos entre pulsaciones
 last_press = 0
 count = 0
 
+
+
+
+def create_m_from_file(filename):
+    mazes = []
+    
+    with open(filename, 'r') as file:
+        lines = file.readlines()
+    
+    index = 0
+    while index < len(lines):
+        r_c = lines[index].strip()
+        index += 1
+
+        if r_c == '0':
+            break
+        
+        r_c = r_c.split()
+        rows = int(r_c[0])
+        columns = int(r_c[1])
+        posinit_x = int(r_c[2])
+        posinit_y = int(r_c[3])
+        posfinal_x = int(r_c[4])
+        posfinal_y = int(r_c[5])
+
+        print("Filas:", rows, "Columnas:", columns, 
+              "Posinit_x:", posinit_x, "Posinit_y:", posinit_y, 
+              "Posfinal_x:", posfinal_x, "Posfinal_y:", posfinal_y)
+
+        mat = []
+        for _ in range(rows):
+            row = list(map(int, lines[index].strip().split()))
+            mat.append(row)
+            index += 1
+        
+        mazes.append((mat, rows, columns, posinit_x, posinit_y, posfinal_x, posfinal_y))
+
+    return mazes
+
 def create_m():
     mazes = []
 
@@ -258,7 +297,7 @@ def uc(mat, m, n, inicio, objetivo):
     return None  # Camino no encontrado
 
 
-mazes = create_m()
+mazes = create_m_from_file("test_mapas.txt")
 
 for idx, (mat, m, n, posinit_x, posinit_y, posfinal_x, posfinal_y) in enumerate(mazes):
     print(f"Laberinto N°: {idx}")
