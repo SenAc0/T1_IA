@@ -1,4 +1,3 @@
-# Example file showing a circle moving on screen
 import pygame
 import time
 import heapq
@@ -9,14 +8,11 @@ pygame.init()
 screen = pygame.display.set_mode((width, height))
 clock = pygame.time.Clock()
 running = True
-dt = 0
-
 font = pygame.font.SysFont(None, 48)
 
 
 delay = 300  # milisegundos entre pulsaciones
 last_press = 0
-
 count = 0
 
 def create_m():
@@ -103,10 +99,7 @@ def mov(mat, m, n, posx, posy):
     h = mat[i][j]
     #print(h)
 
-
     keys = pygame.key.get_pressed()
-    
-
 
     if keys[pygame.K_w] and current_time - last_press > delay:
         if i-h < 0:
@@ -164,15 +157,15 @@ def goal(posactual_x, posactual_y,posfinal_x, posfinal_y):
         return True
     return False
 
-#Cuenta movimientos
+#Cuenta movimientos hechos a mano
 def countg():
     global count
     count +=1
     print(count)
-
+#Movimientos en pantalla
 def draw_counter(screen, count):
     counter_text = font.render(f"Movimientos: {count}", True, "white")
-    screen.blit(counter_text, (20, 20))  # posicion (20px desde la izquierda, 20px desde arriba)
+    screen.blit(counter_text, (20, 20))  # posicion 
 
 class Nodo:
     def __init__(self, x, y, padre=None, costo = 0):
@@ -200,11 +193,11 @@ def dfs(mat, m, n, inicio, objetivo):
 
     while pila:
         actual = pila.pop()
-        print(actual.x, actual.y)
+        
         if (actual.x, actual.y) in visitados:
             continue
         visitados.add((actual.x, actual.y))
-
+        print(actual.x, actual.y)
         if (actual.x, actual.y) == objetivo:
             return actual.obtener_camino()
 
@@ -212,6 +205,8 @@ def dfs(mat, m, n, inicio, objetivo):
         movimientos = [
             (actual.x - h, actual.y),   # arriba
             (actual.x, actual.y + h),   # derecha
+
+
             (actual.x + h, actual.y),   # abajo
             (actual.x, actual.y - h)    # izquierda
             
@@ -235,20 +230,23 @@ def uc(mat, m, n, inicio, objetivo):
         # Ordenar la pila por costo 
         pila.sort(key=lambda nodo: nodo.costo)
         actual = pila.pop(0)  
-        print(actual.x, actual.y)
+        
         if (actual.x, actual.y) in visitados:
             continue
         visitados.add((actual.x, actual.y))
+        print(actual.x, actual.y)
 
         if (actual.x, actual.y) == objetivo:
             return actual.obtener_camino()
 
         h = mat[actual.x][actual.y]
         movimientos = [
-            (actual.x - h, actual.y),   # arriba
-            (actual.x, actual.y + h),   # derecha
+            (actual.x, actual.y - h),    # izquierda
             (actual.x + h, actual.y),   # abajo
-            (actual.x, actual.y - h)    # izquierda
+            
+            
+            (actual.x, actual.y + h),   # derecha
+            (actual.x - h, actual.y),   # arriba
         ]
 
         for x_nuevo, y_nuevo in movimientos:
@@ -260,19 +258,6 @@ def uc(mat, m, n, inicio, objetivo):
     return None  # Camino no encontrado
 
 
-def show_path(camino, screen, mat, n, m):
-    for pos_x, pos_y in camino:
-        # Actualizar posición visual
-        player_pos, _, _ = player_posi(mat, n, m, pos_x, pos_y)
-
-        # Redibujar pantalla
-        screen.fill((0, 0, 0))  # Opcional: limpia la pantalla
-        pygame.draw.circle(screen, "red", player_pos, 40, width=5)
-        pygame.display.update()
-        
-        # Pausa para mostrar movimiento
-        time.sleep(0.5)  # Espera medio segundo entre pasos
-
 mazes = create_m()
 
 for idx, (mat, m, n, posinit_x, posinit_y, posfinal_x, posfinal_y) in enumerate(mazes):
@@ -283,11 +268,23 @@ for idx, (mat, m, n, posinit_x, posinit_y, posfinal_x, posfinal_y) in enumerate(
     cell_s = min(cell_s_w, cell_s_h)  # Elegir el más pequeño para que todo encaje
     player_pos, posmat_x, posmat_y = player_posi(mat, n, m, posinit_x, posinit_y)
 
-    camino = dfs(mat, m, n, (posinit_x, posinit_y), (posfinal_x, posfinal_y))
+    print("¿Con qué método quieres resolver el laberinto?")
+    print("1: DFS (Búsqueda en Profundidad)")
+    print("2: UC (Costo Uniforme)")
+    eleccion = input("Escribe 1 o 2: ").strip()
+
+    if eleccion == "1":
+        camino = dfs(mat, m, n, (posinit_x, posinit_y), (posfinal_x, posfinal_y))
+    elif eleccion == "2":
+        camino = uc(mat, m, n, (posinit_x, posinit_y), (posfinal_x, posfinal_y))
+    else:
+        print("Elección inválida, se usará DFS por defecto.")
+        camino = dfs(mat, m, n, (posinit_x, posinit_y), (posfinal_x, posfinal_y))
+
 
     if camino:
-        print("Camino encontrado con DFS:")
-        print(len(camino) - 1)
+        print("Camino encontrado con opción: ", eleccion)
+        print("Largo del camino: ",len(camino) - 1)
     else:
         print("No se encontró camino.")
         continue
@@ -347,9 +344,6 @@ for idx, (mat, m, n, posinit_x, posinit_y, posfinal_x, posfinal_y) in enumerate(
         # flip() the display to put your work on screen
         pygame.display.flip()
 
-        # limits FPS to 60
-        # dt is delta time in seconds since last frame, used for framerate-
-        # independent physics.
-        dt = clock.tick(60) / 1000
+
 
 pygame.quit()
