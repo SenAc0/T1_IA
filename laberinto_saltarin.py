@@ -1,7 +1,7 @@
 import pygame
 import time
 import heapq
-# pygame setup
+
 width = 1280
 height = 720
 pygame.init()
@@ -11,13 +11,36 @@ running = True
 font = pygame.font.SysFont(None, 48)
 
 
-delay = 300  # milisegundos entre pulsaciones
+delay = 300  # milisegundos
 last_press = 0
 count = 0
 
 
 
+class Nodo:
+    def __init__(self, x, y, padre=None, costo = 0):
+        self.x = x
+        self.y = y
+        self.padre = padre
+        self.hijos = []  
+        self.costo = costo
 
+    def agregar_hijo(self, hijo):
+        self.hijos.append(hijo)
+
+    def obtener_camino(self):
+        camino = []
+        nodo = self
+        while nodo:
+            camino.append((nodo.x, nodo.y))
+            nodo = nodo.padre
+        return camino[::-1]
+## FUNCIONES PARA RECIBIR Y PROCESAR LABERINTOS 
+## FUNCIONES PARA RECIBIR Y PROCESAR LABERINTOS
+## FUNCIONES PARA RECIBIR Y PROCESAR LABERINTOS 
+
+
+# funcion laberintos desde un txt
 def create_m_from_file(filename):
     mazes = []
     
@@ -54,6 +77,7 @@ def create_m_from_file(filename):
 
     return mazes
 
+# funcion laberinto desde la consola
 def create_m():
     mazes = []
 
@@ -89,7 +113,11 @@ def create_m():
 
 
 
-#Dibuja las celdas
+## FUNCIONES DE DIBUJADO EN PYGAME
+## FUNCIONES DE DIBUJADO EN PYGAME
+## FUNCIONES DE DIBUJADO EN PYGAME
+
+# funcion que hace las casillas con su numero correspondiente
 def draw_rect(mat,m,n, posinit_x, posinit_y, posfinal_x, posfinal_y):
     
     # centrado
@@ -119,7 +147,82 @@ def draw_rect(mat,m,n, posinit_x, posinit_y, posfinal_x, posfinal_y):
                 screen.blit(text, text_rect)
 
 
-#Actualiza posicion visual jugador
+# funcion que dibuja el contador
+def draw_counter(screen, count):
+    counter_text = font.render(f"Movimientos: {count}", True, "white")
+    screen.blit(counter_text, (20, 20))  # posicion 
+
+# funcion que dibuja los botones
+def draw_button(rect, text, color):
+    pygame.draw.rect(screen, color, rect)
+    pygame.draw.rect(screen, "white", rect, 3)
+    label = font.render(text, True, "white")
+    label_rect = label.get_rect(center=rect.center)
+    screen.blit(label, label_rect)
+
+# funcion que utiliza draw_button para obligar al jugador a elegir antes de empezar
+def select_algorithm():
+    selecting = True
+    dfs_rect = pygame.Rect(width//2 - 250, height//2 - 50, 200, 100)
+    uc_rect = pygame.Rect(width//2 + 50, height//2 - 50, 200, 100)
+
+    while selecting:
+        screen.fill("black")
+        draw_button(dfs_rect, "DFS", (70, 130, 180))
+        draw_button(uc_rect, "UC", (34, 139, 34))
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if dfs_rect.collidepoint(event.pos):
+                    return "dfs"
+                elif uc_rect.collidepoint(event.pos):
+                    return "uc"
+
+        pygame.display.flip()
+        clock.tick(60)
+
+# funcion para dibujar las casillas exploradas (simplemente cambio de color a gris las visitadas, igual que draw_rect en todo lo demas)
+def draw_rect_visits(mat, m, n, posinit_x, posinit_y, posfinal_x, posfinal_y, explorados, explorados_index):
+    offset_x = (width - n * cell_s) // 2
+    offset_y = (height - m * cell_s) // 2
+
+    for i in range(m):
+        for j in range(n):
+            cell_r = offset_x + j * cell_s
+            cell_c = offset_y + i * cell_s
+            cell_color = "white"
+
+            # 
+            if (i, j) in explorados[:explorados_index]:
+                cell_color = (200, 200, 200)  # gris claro para explorados
+
+            rect = pygame.draw.rect(screen, cell_color, (cell_r, cell_c, cell_s, cell_s))
+            pygame.draw.rect(screen, (0, 0, 0), rect, width=2)  # borde
+
+            
+            if (i == posinit_x and j == posinit_y):
+                text = font.render(str(mat[i][j]), True, "blue")
+            elif (i == posfinal_x and j == posfinal_y):
+                text = font.render(str(mat[i][j]), True, "green")
+            else:
+                text = font.render(str(mat[i][j]), True, (0, 0, 0))
+
+            text_rect = text.get_rect(center=rect.center)
+            screen.blit(text, text_rect)
+
+
+
+
+
+
+##FUNCION DE MOVIMIENTOS Y VERIFICACIONES (RESPECTO A MATRIZ QUE REPRESENTA A LABERINTO)
+##FUNCION DE MOVIMIENTOS Y VERIFICACIONES (RESPECTO A MATRIZ QUE REPRESENTA A LABERINTO)
+##FUNCION DE MOVIMIENTOS Y VERIFICACIONES (RESPECTO A MATRIZ QUE REPRESENTA A LABERINTO)
+
+# Actualiza posicion visual jugador respecto matriz
 def player_posi(mat, n, m, posinit_x, posinit_y):
     offset_x = (width - n*cell_s + cell_s) // 2
     offset_y = (height - m*cell_s+ cell_s) // 2
@@ -130,7 +233,7 @@ def player_posi(mat, n, m, posinit_x, posinit_y):
 
 
 
-#Hace los movimientos respecto a la matriz
+# Hace los movimientos respecto a la matriz (son movimientos del jugador)
 def mov(mat, m, n, posx, posy):
     global last_press                   # No se por que pero no la reconoce como global sin esto pero cell_s si
     i = posx
@@ -189,56 +292,52 @@ def mov(mat, m, n, posx, posy):
         
     return i, j
    
-#Verifica estado objetivo
+# Verifica estado objetivo
 def goal(posactual_x, posactual_y,posfinal_x, posfinal_y):
     if(posactual_x ==  posfinal_x and posactual_y == posfinal_y):
         print("Meta alcanzada")
         return True
     return False
 
-#Cuenta movimientos hechos a mano
+# Cuenta movimientos hechos a mano
 def countg():
     global count
     count +=1
     print(count)
-#Movimientos en pantalla
-def draw_counter(screen, count):
-    counter_text = font.render(f"Movimientos: {count}", True, "white")
-    screen.blit(counter_text, (20, 20))  # posicion 
 
-class Nodo:
-    def __init__(self, x, y, padre=None, costo = 0):
-        self.x = x
-        self.y = y
-        self.padre = padre
-        self.hijos = []  # hijos que surgen de este nodo
-        self.costo = costo
 
-    def agregar_hijo(self, hijo):
-        self.hijos.append(hijo)
 
-    def obtener_camino(self):
-        camino = []
-        nodo = self
-        while nodo:
-            camino.append((nodo.x, nodo.y))
-            nodo = nodo.padre
-        return camino[::-1]
 
+
+
+
+
+
+
+
+
+
+
+## METODOS DE BUSQUEDA
+## METODOS DE BUSQUEDA
+## METODOS DE BUSQUEDA
+
+# dfs
 def dfs(mat, m, n, inicio, objetivo):
     nodo_inicio = Nodo(inicio[0], inicio[1])
     pila = [nodo_inicio]
     visitados = set()
-
+    explorados = []
     while pila:
         actual = pila.pop()
         
         if (actual.x, actual.y) in visitados:
             continue
         visitados.add((actual.x, actual.y))
-        print(actual.x, actual.y)
+        explorados.append((actual.x, actual.y))
+        #print(actual.x, actual.y)
         if (actual.x, actual.y) == objetivo:
-            return actual.obtener_camino()
+            return explorados, actual.obtener_camino()
 
         h = mat[actual.x][actual.y]
         movimientos = [
@@ -257,14 +356,14 @@ def dfs(mat, m, n, inicio, objetivo):
                 actual.agregar_hijo(hijo)
                 pila.append(hijo)
 
-    return None  # camino no encontrado
+    return  explorados, None  # camino no encontrado
 
-#def c_uni():
+# uc
 def uc(mat, m, n, inicio, objetivo):
     nodo_inicio = Nodo(inicio[0], inicio[1], costo=0)
     pila = [nodo_inicio]
     visitados = set()
-
+    explorados = []
     while pila:
         # Ordenar la pila por costo 
         pila.sort(key=lambda nodo: nodo.costo)
@@ -273,10 +372,11 @@ def uc(mat, m, n, inicio, objetivo):
         if (actual.x, actual.y) in visitados:
             continue
         visitados.add((actual.x, actual.y))
-        print(actual.x, actual.y)
+        explorados.append((actual.x, actual.y))
+        #print(actual.x, actual.y)
 
         if (actual.x, actual.y) == objetivo:
-            return actual.obtener_camino()
+            return explorados, actual.obtener_camino()
 
         h = mat[actual.x][actual.y]
         movimientos = [
@@ -290,62 +390,83 @@ def uc(mat, m, n, inicio, objetivo):
 
         for x_nuevo, y_nuevo in movimientos:
             if 0 <= x_nuevo < m and 0 <= y_nuevo < n and (x_nuevo, y_nuevo) not in visitados:
-                costo = actual.costo + 1  # Suponemos un costo unitario para moverse
+                costo = actual.costo + 1  # un costo unitario para moverse
                 hijo = Nodo(x_nuevo, y_nuevo, costo=costo, padre=actual)
                 pila.append(hijo)
 
-    return None  # Camino no encontrado
+    return explorados, None  # Camino no encontrado
 
 
-mazes = create_m_from_file("test_mapas.txt")
+
+
+
+
+
+
+
+
+
+#Comentar o descomentar dependiendo cual se quiera usar
+mazes = create_m_from_file("test_mapas.txt")    #por archivo texto
+#mazes = create_m()                             #por terminal
 
 for idx, (mat, m, n, posinit_x, posinit_y, posfinal_x, posfinal_y) in enumerate(mazes):
     print(f"Laberinto N°: {idx}")
+    camino = []
     running = True
-    cell_s_w = width // n     # Tamaño según columnas (ancho)
-    cell_s_h = height // m    # Tamaño según filas (alto)
+    cell_s_w = width // n     # Tamaño segun columnas (ancho)
+    cell_s_h = height // m    # Tamaño segun filas (alto)
     cell_s = min(cell_s_w, cell_s_h)  # Elegir el más pequeño para que todo encaje
     player_pos, posmat_x, posmat_y = player_posi(mat, n, m, posinit_x, posinit_y)
 
-    print("¿Con qué método quieres resolver el laberinto?")
-    print("1: DFS (Búsqueda en Profundidad)")
-    print("2: UC (Costo Uniforme)")
-    eleccion = input("Escribe 1 o 2: ").strip()
+    
 
-    if eleccion == "1":
-        camino = dfs(mat, m, n, (posinit_x, posinit_y), (posfinal_x, posfinal_y))
-    elif eleccion == "2":
-        camino = uc(mat, m, n, (posinit_x, posinit_y), (posfinal_x, posfinal_y))
+    draw_rect(mat,m,n, posinit_x, posinit_y, posfinal_x, posfinal_y)
+
+    algoritmo = select_algorithm()
+    if algoritmo == "dfs":
+        explorados, camino = dfs(mat, m, n, (posinit_x, posinit_y), (posfinal_x, posfinal_y))
+    elif algoritmo == "uc":
+        explorados, camino = uc(mat, m, n, (posinit_x, posinit_y), (posfinal_x, posfinal_y))
     else:
-        print("Elección inválida, se usará DFS por defecto.")
-        camino = dfs(mat, m, n, (posinit_x, posinit_y), (posfinal_x, posfinal_y))
+        continue    
 
-
-    if camino:
-        print("Camino encontrado con opción: ", eleccion)
-        print("Largo del camino: ",len(camino) - 1)
-    else:
+    if camino is None:
         print("No se encontró camino.")
+        texto = font.render("No se encontró camino, en 2 segundos puedes continuar", True, (255, 255, 255))
+        texto_rect = texto.get_rect(center=(width // 2, height // 2 + 100))
+        screen.blit(texto, texto_rect)
+        pygame.display.flip()
+        pygame.time.delay(2000)
         continue
-
-
+     
+    if camino!= None:
+        print("Camino encontrado con opción: ", algoritmo)
+        print("Largo del camino: ",len(camino) - 1)
+        
+        
+    
 
 
     showing_path = True
     path_index = 0
     path_delay = 1000  # milisegundos entre pasos del camino
-    last_step_time = pygame.time.get_ticks()
 
+
+    explorados_index = 0
+    delay_exploracion = 100  # en milisegundos
+    last_step_time = pygame.time.get_ticks()
+    mostrando_exploracion = False  # para saber si ya pasamos a mostrar el camino
 
     while running:
         current_time = pygame.time.get_ticks()
+        
         
         if goal(posmat_x, posmat_y, posfinal_x, posfinal_y) == True:
             running = False
 
 
-        # poll for events
-        # pygame.QUIT event means the user clicked X to close your window
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -355,11 +476,23 @@ for idx, (mat, m, n, posinit_x, posinit_y, posfinal_x, posfinal_y) in enumerate(
         draw_rect(mat,m,n, posinit_x, posinit_y, posfinal_x, posfinal_y)
 
         draw_counter(screen, path_index)
-    
-    
+
+        #Un delay mientras se muestra la exploracion
+
+        current_time = pygame.time.get_ticks()
+        if not mostrando_exploracion and current_time - last_step_time > delay_exploracion:
+            if explorados_index < len(explorados):
+                explorados_index += 1
+                last_step_time = current_time
+            else:
+                mostrando_exploracion = True  # termina la fase de exploración, inicia camino
+                last_step_time = current_time
+                path_index = 0
+        draw_rect_visits(mat, m, n, posinit_x, posinit_y, posfinal_x, posfinal_y, explorados, explorados_index)
+
         #Un delay mientras se muestra el camino
         
-        if showing_path and camino:
+        if showing_path and camino and mostrando_exploracion:
             current_time = pygame.time.get_ticks()
             if current_time - last_step_time > path_delay:
                 if path_index < len(camino):
@@ -371,16 +504,14 @@ for idx, (mat, m, n, posinit_x, posinit_y, posfinal_x, posfinal_y) in enumerate(
                 else:
                     showing_path = False  
 
-        posmat_x, posmat_y = mov(mat, m, n, posmat_x, posmat_y)
+        #posmat_x, posmat_y = mov(mat, m, n, posmat_x, posmat_y) #descomentar si se quiere mover al jugador de forma manual (lo dejo comentado por defecto para que no afecte a la busqueda)
         
         player_pos, posmat_x, posmat_y = player_posi(mat, n, m, posmat_x, posmat_y)
         pygame.draw.circle(screen, "red", player_pos, 40, width=5)
 
     
-
     
-    
-        # flip() the display to put your work on screen
+        
         pygame.display.flip()
 
 
